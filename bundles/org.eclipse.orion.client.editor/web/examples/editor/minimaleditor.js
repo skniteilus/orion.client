@@ -78,9 +78,9 @@ dojo.addOnLoad(function(){
 		statusReporter: statusReporter,
 		domNode: editorDomNode
 	});
-		
-	dojo.connect(editor, "onDirtyChange", this, function(dirty) {
-		if (dirty) {
+	
+	editor.addEventListener("dirtychange", function(event) {
+		if (event.detail.isDirty) {
 			dirtyIndicator = "You have unsaved changes.  ";
 		} else {
 			dirtyIndicator = "";

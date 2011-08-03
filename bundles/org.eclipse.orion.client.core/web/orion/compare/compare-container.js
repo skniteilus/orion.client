@@ -439,7 +439,9 @@ exports.CompareMergeContainer = (function() {
 		editor.installTextView();
 		if(!readOnly){
 			inputManager = this._inputManager;
-			dojo.connect(editor, "onDirtyChange", inputManager, inputManager.setDirty);
+			editor.addEventListener("dirtychange", function(event) {
+				inputManager.setDirty(event.detail.isDirty);
+			});
 		}
 			
 		var textView = editor.getTextView();

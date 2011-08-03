@@ -8,8 +8,8 @@
  * Contributors: IBM Corporation - initial API and implementation
  ******************************************************************************/
  
- /*global window dojo orion:true eclipse:true handleGetAuthenticationError*/
- /*jslint maxerr:150 browser:true devel:true regexp:false*/
+/*global define window dojo orion:true eclipse:true handleGetAuthenticationError*/
+/*jslint maxerr:150 browser:true devel:true regexp:false*/
 
 var orion = orion || {};
 orion.editor = orion.editor || {};	
@@ -17,7 +17,7 @@ orion.editor = orion.editor || {};
 /**
  * @name orion.editor.Editor
  * @class An <code>Editor</code> is a user interface for editing text that provides additional features over the basic {@link orion.textview.TextView}.
- * Some of <code>Editor</code>'s features include:
+ * Some of these features include:
  * <ul>
  * <li>Additional actions and key bindings for editing text</li>
  * <li>Content assist</li>
@@ -25,7 +25,16 @@ orion.editor = orion.editor || {};
  * <li>Rulers for displaying line numbers and annotations</li>
  * <li>Status reporting</li>
  * </ul>
- * 
+ * <h3>Editor events</h3>
+ * Editor provides API for listening to editor events, which are more abstract than those produced by the basic {@link orion.textview.TextView}.
+ * Clients can listen for editor events by calling {@link #addEventListener} and {@link #removeEventListener}.
+ * The supported event types are:
+ * <ul>
+ * <li><code>dirtychange</code> Dispatched when the editor's dirty state has changed.</li>
+ * <li><code>inputchange</code> Dispatched when the contents of the editor has changed.</li>
+ * </ul>
+ * Detailed information for an event is provided in its <code>detail</code> field.
+ *
  * @description Creates a new Editor with the given options.
  * @param {Object} options Options controlling the features of this Editor.
  * @param {Object} options.annotationFactory
@@ -55,7 +64,8 @@ orion.editor.Editor = (function() {
 		this._overviewRuler = null;
 		this._dirty = false;
 		this._contentAssist = null;
-		this._keyModes = [];		
+		this._keyModes = [];
+		this._eventTable = new orion.textview.EventTable();
 	}
 	Editor.prototype = /** @lends orion.editor.Editor.prototype */ {
 		/**
@@ -134,7 +144,7 @@ orion.editor.Editor = (function() {
 			if (this._dirty === dirty) {
 				return;
 			}
-			this.onDirtyChange(dirty);
+			this.setDirty(dirty);
 		},
 		
 		/**
@@ -377,24 +387,27 @@ orion.editor.Editor = (function() {
 		 * @param {Boolean} contentsSaved
 		 */
 		onInputChange : function (title, message, contents, contentsSaved) {
-			if (contentsSaved && this._textView) {
-				// don't reset undo stack on save, just mark it clean so that we don't lose the undo past the save
-				this._undoStack.markClean();
-				this.checkDirty();
-				return;
-			}
 			if (this._textView) {
-				if (message) {
-					this._textView.setText(message);
+				if (contentsSaved) {
+					// don't reset undo stack on save, just mark it clean so that we don't lose the undo past the save
+					this._undoStack.markClean();
+					this.checkDirty();
 				} else {
-					if (contents !== null && contents !== undefined) {
-						this._textView.setText(contents);
+					if (message) {
+						this._textView.setText(message);
+					} else {
+						if (contents !== null && contents !== undefined) {
+							this._textView.setText(contents);
+						}
 					}
+					this._undoStack.reset();
+					this.checkDirty();
+					this._textView.focus();
 				}
-				this._undoStack.reset();
-				this.checkDirty();
-				this._textView.focus();
 			}
+			var detail = { title: title, message: message, contents: contents, contentsSaved: contentsSaved };
+			var event = this._createEvent("inputchange", detail);
+			this.dispatchEvent(event);
 		},
 		
 		/**
@@ -425,11 +438,57 @@ orion.editor.Editor = (function() {
 		},
 		
 		/**
-		 * Called when the dirty state of the editor is changing.
 		 * @param {Boolean} isDirty
 		 */
-		onDirtyChange: function(isDirty) {
+		setDirty: function(isDirty) {
 			this._dirty = isDirty;
+			var detail = { isDirty: isDirty };
+			this.dispatchEvent(this._createEvent("dirtychange", detail));
+		},
+		
+		/**
+		 * Registers an event listener.
+		 * @param {String} type Specifies the <code>Event.type</code> associated with the event for which you are registering.
+		 * @param {Function|EventListener} listener If this parameter is a function, it will be used as the callback for the event;
+		 * otherwise, if it is an object, its <code>handleEvent</code> method will be used as the callback (see the 
+		 <a href="http://www.w3.org/TR/DOM-Level-3-Events/#events-EventListener">DOM3 EventListener</a> interface for details).
+		 */
+		addEventListener: function(type, listener) {
+			if (typeof listener === "function") {
+				this._eventTable.addEventListener(type, this, listener, null);
+			} else if (typeof listener === "object") {
+				this._eventTable.addEventListener(type, listener, listener.handleEvent, null);
+			}
+		},
+		
+		/**
+		 * Removes an event listener.
+		 * @param {String} type Specifies the <code>Event.type</code> for which you registered the event listener.
+		 * @param {Function|EventListener} listener The listener to be removed.
+		 */
+		removeEventListener: function(type, listener) {
+			if (typeof listener === "function") {
+				this._eventTable.removeEventListener(type, this, listener, null);
+			} else if (typeof listener === "object") {
+				this._eventTable.removeEventListener(type, listener, listener.handleEvent, null);
+			}
+		},
+		
+		/**
+		 * Dispatches an event into the editor's event model.
+		 * @param {Event} event
+		 */
+		dispatchEvent: function(event) {
+			this._eventTable.sendEvent(event.type, event);
+		},
+		
+		/** @private */
+		_createEvent: function(/**String*/ type, /**Object*/ detail) {
+			return {
+				type: type,
+				target: this,
+				detail: detail
+			};
 		}
 	};
 	return Editor;

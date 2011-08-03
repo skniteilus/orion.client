@@ -64,7 +64,7 @@ orion.editor.ContentAssist = (function() {
 				this.showContentAssist(true);
 				return true;
 			}));
-			dojo.connect(this.editor, "onInputChange", this, this.inputChanged);
+			this.editor.addEventListener("inputchange", dojo.hitch(this, this.inputChanged));
 		},
 		/** Registers a listener with this <code>ContentAssist</code>. */
 		addEventListener: function(/** String */ type, /** Function */ listener) {
@@ -84,7 +84,8 @@ orion.editor.ContentAssist = (function() {
 			}
 		},
 		/** @private */
-		inputChanged: function(/**String*/ fileName) {
+		inputChanged: function(event) {
+			var fileName = event.detail.title;
 			if (this.serviceRegistry) {
 				// Filter the ServiceReferences
 				this.activeServiceReferences = [];

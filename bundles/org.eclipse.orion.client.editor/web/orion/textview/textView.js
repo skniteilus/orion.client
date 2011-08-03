@@ -22,6 +22,60 @@ var orion = orion || {};
  */ 
 orion.textview = orion.textview || {};
 
+/** 
+ * Constructs a new EventTable object.
+ * 
+ * @class 
+ * @name orion.textview.EventTable
+ * @private
+ */
+orion.textview.EventTable = (function() {
+	/** @private */
+	function EventTable(){
+		this._listeners = {};
+	}
+	EventTable.prototype = /** @lends orion.textview.EventTable.prototype */ {
+		/** @private */
+		addEventListener: function(type, context, func, data) {
+			if (!this._listeners[type]) {
+				this._listeners[type] = [];
+			}
+			var listener = {
+					context: context,
+					func: func,
+					data: data
+			};
+			this._listeners[type].push(listener);
+		},
+		/** @private */
+		sendEvent: function(type, event) {
+			var listeners = this._listeners[type];
+			if (listeners) {
+				for (var i=0, len=listeners.length; i < len; i++){
+					var l = listeners[i];
+					if (l && l.context && l.func) {
+						l.func.call(l.context, event, l.data);
+					}
+				}
+			}
+		},
+		/** @private */
+		removeEventListener: function(type, context, func, data){
+			var listeners = this._listeners[type];
+			if (listeners) {
+				for (var i=0, len=listeners.length; i < len; i++){
+					var l = listeners[i];
+					if (l.context === context && l.func === func && l.data === data) {
+						listeners.splice(i, 1);
+						break;
+					}
+				}
+			}
+		}
+	};
+	return EventTable;
+}());
+
 /**
  * Constructs a new text view.
  * 
@@ -143,60 +197,6 @@ orion.textview.TextView = (function() {
 			}
 		};
 		return Selection;
-	}());
-
-	/** 
-	 * Constructs a new EventTable object.
-	 * 
-	 * @class 
-	 * @name orion.textview.EventTable
-	 * @private
-	 */
-	var EventTable = (function() {
-		/** @private */
-		function EventTable(){
-		    this._listeners = {};
-		}
-		EventTable.prototype = /** @lends EventTable.prototype */ {
-			/** @private */
-			addEventListener: function(type, context, func, data) {
-				if (!this._listeners[type]) {
-					this._listeners[type] = [];
-				}
-				var listener = {
-						context: context,
-						func: func,
-						data: data
-				};
-				this._listeners[type].push(listener);
-			},
-			/** @private */
-			sendEvent: function(type, event) {
-				var listeners = this._listeners[type];
-				if (listeners) {
-					for (var i=0, len=listeners.length; i < len; i++){
-						var l = listeners[i];
-						if (l && l.context && l.func) {
-							l.func.call(l.context, event, l.data);
-						}
-					}
-				}
-			},
-			/** @private */
-			removeEventListener: function(type, context, func, data){
-				var listeners = this._listeners[type];
-				if (listeners) {
-					for (var i=0, len=listeners.length; i < len; i++){
-						var l = listeners[i];
-						if (l.context === context && l.func === func && l.data === data) {
-							listeners.splice(i, 1);
-							break;
-						}
-					}
-				}
-			}
-		};
-		return EventTable;
 	}());
 	
 	/** @private */
@@ -3650,7 +3650,7 @@ orion.textview.TextView = (function() {
 			this._model = options.model ? options.model : new orion.textview.TextModel();
 			this.readonly = options.readonly === true;
 			this._selection = new Selection (0, 0, false);
-			this._eventTable = new EventTable();
+			this._eventTable = new orion.textview.EventTable();
 			this._maxLineWidth = 0;
 			this._maxLineIndex = -1;
 			this._ignoreSelect = true;

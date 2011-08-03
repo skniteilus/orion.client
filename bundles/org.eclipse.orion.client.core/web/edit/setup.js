@@ -429,7 +429,9 @@ exports.setUpEditor = function(isReadOnly){
 			});
 		});
 		
-		dojo.connect(editor, "onDirtyChange", inputManager, inputManager.setDirty);
+		editor.addEventListener("dirtychange", function(event) {
+			inputManager.setDirty(event.detail.isDirty);
+		});
 		
 		// Generically speaking, we respond to changes in selection.  New selections change the editor's input.
 		serviceRegistry.getService("orion.page.selection").then(function(service) {

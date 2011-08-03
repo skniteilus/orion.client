@@ -14,10 +14,13 @@ define(['dojo'], function(dojo) {
 
 var eclipse = eclipse || {};
 eclipse.SyntaxChecker = (function () {
-	function SyntaxChecker(serviceRegistry, editorContainer) {
+	function SyntaxChecker(serviceRegistry, editor) {
 		this.registry = serviceRegistry;
-		this.editorContainer = editorContainer;
-		dojo.connect(this.editorContainer, "onInputChange", this, this.checkSyntax);
+		this.editor = editor;
+		this.editor.addEventListener("inputchange", dojo.hitch(this, function(event) {
+			var detail = event.detail;
+			this.checkSyntax(detail.title, detail.message, detail.contents, detail.contentsSaved);
+		}));
 	}
 	SyntaxChecker.prototype = {
 		checkSyntax: function (title, message, contents, contentsSaved) {
