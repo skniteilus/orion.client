@@ -9,12 +9,13 @@
  * Contributors:
  *     IBM Corporation - initial API and implementation
  *******************************************************************************/
-
+/*global define window*/
+/*jslint browser:true devel:true */
 define(['require', 'dojo', 'orion/compare/diff-parser', 'orion/compare/rulers', 'orion/compare/compare-inline-model', 'orion/compare/compare-2way-model', 'orion/editor/contentAssist',
         'orion/editorCommands','orion/editor/editor','orion/editor/editorFeatures','orion/globalCommands', 'orion/breadcrumbs', 'orion/compare/gap-model' , 'orion/commands',
-        'orion/textview/textModel','orion/textview/textView','examples/textview/textStyler' , 'orion/compare/compareUtils', 'orion/editor/asyncStyler', 'orion/editor/textMateStyler','orion/compare/diff-provider', 'orion/compare/jsdiffAdapter'], 
+        'orion/textview/textModel','orion/textview/textView', 'orion/compare/compareUtils', 'orion/compare/diff-provider', 'orion/compare/jsdiffAdapter', 'orion/highlight'], 
 		function(require, dojo, mDiffParser, mRulers, mCompareModel, mTwoWayCompareModel, mContentAssist, mEditorCommands, mEditor, mEditorFeatures, mGlobalCommands, mBreadcrumbs,
-				mGapModel , mCommands, mTextModel, mTextView, mTextStyler , mCompareUtils, mAsyncStyler, mTextMateStyler, mDiffProvider, mJSDiffAdapter) {
+				mGapModel , mCommands, mTextModel, mTextView, mCompareUtils, mDiffProvider, mJSDiffAdapter, Highlight) {
 
 var exports = {};
 
@@ -251,44 +252,6 @@ exports.DefaultDiffProvider = (function() {
 	return DefaultDiffProvider;
 }());
 
-
-exports.CompareSyntaxHighlighter = (function() {
-	function CompareSyntaxHighlighter(serviceRegistry){
-		this.styler = null;
-		this.syntaxHighlightProviders = serviceRegistry.getServiceReferences("orion.edit.highlighter");
-		this.serviceRegistry = serviceRegistry;
-	}	
-	CompareSyntaxHighlighter.prototype = {
-			highlight: function(fileName, fileType, textView) {
-				if (this.styler) {
-					this.styler.destroy();
-					this.styler = null;
-				}
-				if (fileName && fileType) {
-					switch(fileType) {
-						case "js":
-							this.styler = new mTextStyler.TextStyler(textView, "js");
-							break;
-						case "java":
-							this.styler = new mTextStyler.TextStyler(textView, "java");
-							break;
-						case "html":
-							//TODO
-							break;
-						case "xml":
-							//TODO
-							break;
-						case "css":
-							this.styler = new mTextStyler.TextStyler(textView, "css");
-							break;
-					}
-				}
-			}
-	};
-	return CompareSyntaxHighlighter;
-}());
-
-
 //Diff block styler , this will always be called after the text styler
 exports.DiffStyler = (function() {
 	function DiffStyler(compareMatchRenderer, textView){
@@ -344,12 +307,13 @@ exports.DiffStyler = (function() {
 //the wrapper to order the text and diff styler so that we can always have diff highlighted on top of text syntax
 exports.TwoWayCompareStyler = (function() {
 	function TwoWayCompareStyler(registry, compareMatchRenderer){
-		this._syntaxHighlither = new exports.CompareSyntaxHighlighter(registry);
+		this._syntaxHighlither = new Highlight.SyntaxHighlighter(registry);
 		this._diffHighlither = new exports.DiffStyler(compareMatchRenderer);
 	}	
 	TwoWayCompareStyler.prototype = {
 		highlight: function(fileName, fileType, editorWidget) {
-			this._syntaxHighlither.highlight(fileName, fileType, editorWidget);
+			// TODO contentType
+			this._syntaxHighlither.setup(fileName, contentType, editorWidget.getTextView(), editorWidget.getAnnotationModel());
 			this._diffHighlither.highlight(editorWidget);
 		}
 	};
