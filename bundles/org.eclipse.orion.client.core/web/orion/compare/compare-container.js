@@ -222,9 +222,8 @@ exports.DefaultDiffProvider = (function() {
 			return fileName;
 		},
 		
-		//temporary
-		//TODO : get the file type from file service
-		_resolveFileType: function(fileURL){
+		_resolveContentType: function(fileURL){
+			// TODO
 			var fileName = this._resolveFileName(fileURL);
 			var splits = fileName.split(".");
 			if (splits.length > 0) {
@@ -236,8 +235,8 @@ exports.DefaultDiffProvider = (function() {
 		_resolveComplexFileURL: function(complexURL, errorCallback) {
 			var that = this;
 			this._diffProvider.getDiffFileURI(complexURL).then(function(jsonData, secondArg) {
-				that.callBack({ baseFile:{URL: jsonData.Old, Name: that._resolveFileName(jsonData.Old), Type: that._resolveFileType(jsonData.Old)},
-					 			newFile:{URL: jsonData.New, Name: that._resolveFileName(jsonData.New), Type: that._resolveFileType(jsonData.New)},
+				that.callBack({ baseFile:{URL: jsonData.Old, Name: that._resolveFileName(jsonData.Old), Type: that._resolveContentType(jsonData.Old)},
+					 			newFile:{URL: jsonData.New, Name: that._resolveFileName(jsonData.New), Type: that._resolveContentType(jsonData.New)},
 					 			diff: that._diffContent
 							 });
 			}, errorCallback);
@@ -544,7 +543,7 @@ exports.TwoWayCompareContainer = (function() {
 				parent: editorContainerDomNode,
 				model: compareModel,
 				readonly: readOnly,
-				stylesheet: require.toUrl("orion/compare/editor.css") ,
+				stylesheet: [ require.toUrl("orion/compare/editor.css"), require.toUrl("css/default-theme.css") ],
 				tabSize: 4
 			});
 			view.addEventListener("Load", function(){
@@ -671,11 +670,9 @@ exports.TwoWayCompareContainer = (function() {
 			this._textViewRight.getModel().init(result.mapper);
 			
 			this._editorRight.setInput(this._baseFile.Name, null, input);
-			// TODO contentType
 			this._highlighter[1].highlight(this._baseFile.Name, this._baseFile.Type, this._textViewRight);
 			
 			this._editorLeft.setInput(this._newFile.Name, null, output);
-			// TODO contentType
 			this._highlighter[0].highlight(this._newFile.Name, this._newFile.Type, this._textViewLeft);
 			if(!this._readonly)
 				this._inputManager.setInput(this._newFile.URL , this._editorLeft);

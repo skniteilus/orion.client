@@ -20,11 +20,11 @@ define(['dojo', 'examples/textview/textStyler', 'orion/editor/textMateStyler', '
 	 * @param {orion.file.ContentType} contentType
 	 * @param {orion.textview.TextView} textView
 	 * @param {orion.textview.AnnotationModel} annotationModel
-	 * @param {String} [fileName] DEPRECATED
+	 * @param {String} [fileName] Deprecated.
 	 * @returns {Dojo.Deferred}
 	 */
 	function createStyler(serviceRegistry, contentTypeService, contentType, textView, annotationModel, fileName) {
-		// Returns a promise or null.
+		// Returns a promise (if provider matches) or null (if it doesn't match).
 		function getPromise(provider, extension) {
 			var contentTypeIds = provider.getProperty("contentType"),
 			    fileTypes = provider.getProperty("fileTypes"); // backwards compatibility
@@ -40,7 +40,6 @@ define(['dojo', 'examples/textview/textStyler', 'orion/editor/textMateStyler', '
 			}
 			return null;
 		}
-		// Returns 
 		function getDefaultStyler(contentType, extension) {
 			switch (contentType && contentType.id) {
 				case "text.javascript":
@@ -49,16 +48,6 @@ define(['dojo', 'examples/textview/textStyler', 'orion/editor/textMateStyler', '
 				case "text.java":
 					return new mTextStyler.TextStyler(textView, "java", annotationModel);
 				case "text.css":
-					return new mTextStyler.TextStyler(textView, "css", annotationModel);
-			}
-			// Deprecated, this is only here until compare-container learns to provide a ContentType.
-			switch (extension) {
-				case "js":
-				case "json": 
-					return new mTextStyler.TextStyler(textView, "js", annotationModel);
-				case "java":
-					return new mTextStyler.TextStyler(textView, "js", annotationModel);
-				case "css":
 					return new mTextStyler.TextStyler(textView, "css", annotationModel);
 			}
 			return null;
@@ -113,7 +102,7 @@ define(['dojo', 'examples/textview/textStyler', 'orion/editor/textMateStyler', '
 	 * @name orion.highlight.SyntaxHighlighter
 	 * @class
 	 * @description 
-	 * <p>Requires {@link orion.file.ContentTypeService}</p>
+	 * <p>Requires service {@link orion.file.ContentTypeService}</p>
 	 * @param {orion.serviceregistry.ServiceRegistry} serviceRegistry Registry to look up highlight providers from.
 	 */
 	function SyntaxHighlighter(serviceRegistry) {
@@ -125,7 +114,8 @@ define(['dojo', 'examples/textview/textStyler', 'orion/editor/textMateStyler', '
 		 * @param {orion.file.ContentType} contentType
 		 * @param {orion.textview.TextView} textView
 		 * @param {orion.textview.AnnotationModel} annotationModel
-		 * @param {String} [fileName] <i>Deprecated.</i> For backwards compatibility a styler can be found by filename rather than content type.
+		 * @param {String} [fileName] <i>Deprecated.</i> For backwards compatibility only, service-contributed highlighters
+		 * will be checked against the file extension instead of contentType.
 		 * @returns {dojo.Deferred} A promise that is resolved when this highlighter has been set up.
 		 */
 		setup: function(fileContentType, textView, annotationModel, fileName) {
