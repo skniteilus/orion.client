@@ -20,7 +20,7 @@ define(['dojo', 'examples/textview/textStyler', 'orion/editor/textMateStyler', '
 	 * @param {orion.file.ContentType} contentType
 	 * @param {orion.textview.TextView} textView
 	 * @param {orion.textview.AnnotationModel} annotationModel
-	 * @param {String} [fileName]
+	 * @param {String} [fileName] DEPRECATED
 	 * @returns {Dojo.Deferred}
 	 */
 	function createStyler(serviceRegistry, contentTypeService, contentType, textView, annotationModel, fileName) {
@@ -40,27 +40,39 @@ define(['dojo', 'examples/textview/textStyler', 'orion/editor/textMateStyler', '
 			}
 			return null;
 		}
-		var styler = null;
-		switch (contentType && contentType.id) {
-			case "text.javascript":
-			case "text.json":
-				styler = new mTextStyler.TextStyler(textView, "js", annotationModel);
-				break;
-			case "text.java":
-				styler = new mTextStyler.TextStyler(textView, "java", annotationModel);
-				break;
-			case "text.css":
-				styler = new mTextStyler.TextStyler(textView, "css", annotationModel);
-				break;
+		// Returns 
+		function getDefaultStyler(contentType, extension) {
+			switch (contentType && contentType.id) {
+				case "text.javascript":
+				case "text.json":
+					return new mTextStyler.TextStyler(textView, "js", annotationModel);
+				case "text.java":
+					return new mTextStyler.TextStyler(textView, "java", annotationModel);
+				case "text.css":
+					return new mTextStyler.TextStyler(textView, "css", annotationModel);
+			}
+			// Deprecated, this is only here until compare-container learns to provide a ContentType.
+			switch (extension) {
+				case "js":
+				case "json": 
+					return new mTextStyler.TextStyler(textView, "js", annotationModel);
+				case "java":
+					return new mTextStyler.TextStyler(textView, "js", annotationModel);
+				case "css":
+					return new mTextStyler.TextStyler(textView, "css", annotationModel);
+			}
+			return null;
 		}
+		// Check default styler
+		var extension = fileName && fileName.split(".").pop().toLowerCase();
+		var styler = getDefaultStyler(contentType, extension);
 		if (styler) {
 			var result = new dojo.Deferred();
 			result.callback(styler);
 			return result;
 		}
 		
-		// Check services.
-		var extension = fileName && fileName.split(".").pop().toLowerCase();
+		// Check services
 		var serviceRefs = serviceRegistry.getServiceReferences("orion.edit.highlighter");
 		var grammars = [], promises = [];
 		for (var i=0; i < serviceRefs.length; i++) {
@@ -100,6 +112,8 @@ define(['dojo', 'examples/textview/textStyler', 'orion/editor/textMateStyler', '
 	/**
 	 * @name orion.highlight.SyntaxHighlighter
 	 * @class
+	 * @description 
+	 * <p>Requires {@link orion.file.ContentTypeService}</p>
 	 * @param {orion.serviceregistry.ServiceRegistry} serviceRegistry Registry to look up highlight providers from.
 	 */
 	function SyntaxHighlighter(serviceRegistry) {
@@ -111,10 +125,10 @@ define(['dojo', 'examples/textview/textStyler', 'orion/editor/textMateStyler', '
 		 * @param {orion.file.ContentType} contentType
 		 * @param {orion.textview.TextView} textView
 		 * @param {orion.textview.AnnotationModel} annotationModel
-		 * @param {String} [fileName] For backwards compatibility a styler can be found by filename rather than content type.
+		 * @param {String} [fileName] <i>Deprecated.</i> For backwards compatibility a styler can be found by filename rather than content type.
 		 * @returns {dojo.Deferred} A promise that is resolved when this highlighter has been set up.
 		 */
-		setup: function(fileName, fileContentType, textView, annotationModel) {
+		setup: function(fileContentType, textView, annotationModel, fileName) {
 			if (this.styler) {
 				if (this.styler.destroy) {
 					this.styler.destroy();
@@ -122,7 +136,7 @@ define(['dojo', 'examples/textview/textStyler', 'orion/editor/textMateStyler', '
 				this.styler = null;
 			}
 			var self = this;
-			return createStyler(this.serviceRegistry, this.serviceRegistry.getService("orion.file.contenttypes"), 
+			return createStyler(this.serviceRegistry, this.serviceRegistry.getService("orion.file.contenttypes"),
 				fileContentType, textView, annotationModel, fileName).then(
 					function(styler) {
 						self.styler = styler;

@@ -1313,6 +1313,7 @@ define(['require', 'dojo', 'dijit','orion/explorer', 'orion/util', 'orion/fileCl
 	};
 	
 	SearchResultExplorer.prototype._resolveFileType = function(fileLocation){
+		// TODO should look up content type
 		var fileName = fileLocation;
 		var splits = fileName.split(".");
 		if (splits.length > 0) {

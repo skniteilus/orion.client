@@ -114,7 +114,7 @@ exports.setUpEditor = function(serviceRegistry, preferences, isReadOnly){
 						mGlobalCommands.setPageTarget([metadata, metadata.Parents && metadata.Parents[0]], serviceRegistry, commandService, ["", " on folder"]);
 						this.setTitle(metadata.Location);
 						this._contentType = contentTypeService.getFileContentType(metadata);
-						syntaxHighlighter.setup(fileURI, this._contentType, editor.getTextView(), editor.getAnnotationModel())
+						syntaxHighlighter.setup(this._contentType, editor.getTextView(), editor.getAnnotationModel(), fileURI)
 							.then(dojo.hitch(this, function() {
 								editor.highlightAnnotations();
 								setOutlineProviders(this._contentType, location);

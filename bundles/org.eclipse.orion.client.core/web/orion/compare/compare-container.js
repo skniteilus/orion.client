@@ -311,10 +311,12 @@ exports.TwoWayCompareStyler = (function() {
 		this._diffHighlither = new exports.DiffStyler(compareMatchRenderer);
 	}	
 	TwoWayCompareStyler.prototype = {
-		highlight: function(fileName, fileType, editorWidget) {
-			// TODO contentType
-			this._syntaxHighlither.setup(fileName, contentType, editorWidget.getTextView(), editorWidget.getAnnotationModel());
-			this._diffHighlither.highlight(editorWidget);
+		highlight: function(fileName, contentType, editorWidget) {
+			var self = this;
+			this._syntaxHighlither.setup(contentType, editorWidget, null /* TODO AnnotationModel */, fileName).then(
+				function() {
+					self._diffHighlither.highlight(editorWidget);
+				});
 		}
 	};
 	return TwoWayCompareStyler;
@@ -669,9 +671,11 @@ exports.TwoWayCompareContainer = (function() {
 			this._textViewRight.getModel().init(result.mapper);
 			
 			this._editorRight.setInput(this._baseFile.Name, null, input);
+			// TODO contentType
 			this._highlighter[1].highlight(this._baseFile.Name, this._baseFile.Type, this._textViewRight);
 			
 			this._editorLeft.setInput(this._newFile.Name, null, output);
+			// TODO contentType
 			this._highlighter[0].highlight(this._newFile.Name, this._newFile.Type, this._textViewLeft);
 			if(!this._readonly)
 				this._inputManager.setInput(this._newFile.URL , this._editorLeft);
