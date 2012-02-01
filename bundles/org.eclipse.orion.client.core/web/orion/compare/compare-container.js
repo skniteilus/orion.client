@@ -95,12 +95,12 @@ exports.CompareContainer = (function() {
 			that._diffProvider.provide(that._complexURL, onsave, that._hasConflicts, function(diffParam){
 				that._baseFile.URL = (diffParam.baseFile && typeof(diffParam.baseFile.URL) === "string") ? diffParam.baseFile.URL : that._baseFile.URL;
 				that._baseFile.Name = (diffParam.baseFile && typeof(diffParam.baseFile.Name) === "string") ? diffParam.baseFile.Name : that._baseFile.Name;
-				that._baseFile.Type = (diffParam.baseFile && typeof(diffParam.baseFile.Type) === "string") ? diffParam.baseFile.Type : that._baseFile.Type;
+				that._baseFile.Type = (diffParam.baseFile && typeof(diffParam.baseFile.Type) === "object") ? diffParam.baseFile.Type : that._baseFile.Type;
 				that._baseFile.Content = (diffParam.baseFile && typeof(diffParam.baseFile.Content) === "string") ? diffParam.baseFile.Content : that._baseFile.Content;
 				
 				that._newFile.URL = (diffParam.newFile && typeof(diffParam.newFile.URL) === "string") ? diffParam.newFile.URL : that._newFile.URL;
 				that._newFile.Name = (diffParam.newFile && typeof(diffParam.newFile.Name) === "string") ? diffParam.newFile.Name : that._newFile.Name;
-				that._newFile.Type = (diffParam.newFile && typeof(diffParam.newFile.Type) === "string") ? diffParam.newFile.Type : that._newFile.Type;
+				that._newFile.Type = (diffParam.newFile && typeof(diffParam.newFile.Type) === "object") ? diffParam.newFile.Type : that._newFile.Type;
 				that._newFile.Content = (diffParam.newFile && typeof(diffParam.newFile.Content) === "string") ? diffParam.newFile.Content : that._newFile.Content;
 				
 				that._diffContent = typeof(diffParam.diff) === "string" ? diffParam.diff : that._diffContent;
@@ -222,23 +222,24 @@ exports.DefaultDiffProvider = (function() {
 			return fileName;
 		},
 		
-		_resolveContentType: function(fileURL){
-			// TODO
-			var fileName = this._resolveFileName(fileURL);
-			var splits = fileName.split(".");
-			if (splits.length > 0) {
-				return splits.pop().toLowerCase();
-			}
-			return "";
+		_getContentType: function(diffURL){
+			return this.serviceRegistry.getService("orion.file.contenttypes").getDiffContentType(diffURL);
 		},
 		
 		_resolveComplexFileURL: function(complexURL, errorCallback) {
 			var that = this;
 			this._diffProvider.getDiffFileURI(complexURL).then(function(jsonData, secondArg) {
-				that.callBack({ baseFile:{URL: jsonData.Old, Name: that._resolveFileName(jsonData.Old), Type: that._resolveContentType(jsonData.Old)},
-					 			newFile:{URL: jsonData.New, Name: that._resolveFileName(jsonData.New), Type: that._resolveContentType(jsonData.New)},
+				var dl = new dojo.DeferredList([ that._getContentType(jsonData.Old), that._getContentType(jsonData.New) ]);
+				dl.then(function(results) {
+					var baseFileContentType = results[0][1];
+					var newFileContentType = results[1][1];
+					// mamacdon
+					that.callBack({ baseFile:{URL: jsonData.Old, Name: that._resolveFileName(jsonData.Old), Type: baseFileContentType},
+					 			newFile:{URL: jsonData.New, Name: that._resolveFileName(jsonData.New), Type: newFileContentType},
 					 			diff: that._diffContent
 							 });
+					
+				}, errorCallback);
 			}, errorCallback);
 		},
 		
